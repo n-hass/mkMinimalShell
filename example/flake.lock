@@ -2,11 +2,11 @@
   "nodes": {
     "mk-minimal-shell": {
       "locked": {
-        "lastModified": 1728357862,
-        "narHash": "sha256-ZmxobYEUwpwVnXnwey1xB495Pt6PV3IkudyGkce/xzA=",
+        "lastModified": 1728359452,
+        "narHash": "sha256-DRsK19Ia2NMkBP1eA0VLe5O5ARcQgDoZC7WJ8DkQMco=",
         "owner": "n-hass",
         "repo": "mkminimalshell",
-        "rev": "5c2c52f22054904d77438cd4b50930a8bcdc681e",
+        "rev": "c1aac714cdeabeb4f10ff5892bc83cc11538881f",
         "type": "github"
       },
       "original": {

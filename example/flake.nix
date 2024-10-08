@@ -6,33 +6,28 @@
 
   outputs = { self, nixpkgs, mk-minimal-shell }:
   let
-    pkgs.x86_64-linux = import nixpkgs {
-      system = "x86_64-linux";
-      overlays = [mk-minimal-shell.overlay];
+    systems = [ "x86_64-linux" "aarch64-darwin" ];
+
+    forEachSystem = system: let
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ mk-minimal-shell.overlay ];
+      };
+    in {
+      default = pkgs.mkMinimalShell {
+        packages = with pkgs; [
+          rustc
+          cargo
+          rust-analyzer
+        ];
+        HOST_PATH = "this was a second tested val";
+      };
     };
 
-    pkgs.aarch64-darwin = import nixpkgs {
-      system = "aarch64-darwin";
-      overlays = [mk-minimal-shell.overlay];
-    };
-
-  in {
-    devShell.aarch64-darwin = pkgs.aarch64-darwin.mkMinimalShell {
-      packages = with pkgs.aarch64-darwin; [
-        rustc
-        cargo
-        rust-analyzer
-      ];
-      HOST_PATH = "this was a second tested val";
-    };
-
-    devShell.x86_64-linux = pkgs.x86_64-linux.mkMinimalShell {
-      packages = with pkgs.x86_64-linux; [
-        rustc
-        cargo
-        rust-analyzer
-      ];
-      HOST_PATH = "this was a second tested val";
-    };
+    devShells = builtins.foldl' (acc: system: acc // { "${system}" = forEachSystem system; }) {} systems;
+  in
+  {
+    inherit devShells;
   };
 }
+
