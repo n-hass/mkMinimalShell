@@ -9,75 +9,95 @@
             cc = null;
             preHook = "";
             allowedRequisites = null;
-            initialPath = [final.coreutils];
+            initialPath = final.lib.filter
+              (a: final.lib.hasPrefix "coreutils" a.name)
+              final.stdenvNoCC.initialPath;
             shell = "${final.bash}/bin/bash";
             extraNativeBuildInputs = [];
           };
 
-          unsetVars = ''
-            unset CONFIG_SHELL
-            unset HOST_PATH
-            unset MACOSX_DEPLOYMENT_TARGET
-            unset NIX_BUILD_CORES
-            unset NIX_BUILD_TOP
-            unset NIX_CFLAGS_COMPILE
-            unset NIX_DONT_SET_RPATH
-            unset NIX_DONT_SET_RPATH_FOR_BUILD
-            unset NIX_DONT_SET_RPATH_FOR_TARGET
-            unset NIX_NO_SELF_RPATH
-            unset NIX_STORE
-            unset SOURCE_DATE_EPOCH
-            unset TEMP
-            unset TEMPDIR
-            unset TMP
-            unset __darwinAllowLocalNetworking
-            unset __impureHostDeps
-            unset __propagatedImpureHostDeps
-            unset __propagatedSandboxProfile
-            unset __sandboxProfile
-            unset __structuredAttrs
-            unset buildInputs
-            unset buildPhase
-            unset builder
-            unset cmakeFlags
-            unset configureFlags
-            unset depsBuildBuild
-            unset depsBuildBuildPropagated
-            unset depsBuildTarget
-            unset depsBuildTargetPropagated
-            unset depsHostHost
-            unset depsHostHostPropagated
-            unset depsTargetTarget
-            unset depsTargetTargetPropagated
-            unset doCheck
-            unset doInstallCheck
-            unset dontAddDisableDepTrack
-            unset mesonFlags
-            unset name
-            unset nativeBuildInputs
-            unset out
-            unset outputs
-            unset patches
-            unset phases
-            unset preferLocalBuild
-            unset propagatedBuildInputs
-            unset propagatedNativeBuildInputs
-            unset shell
-            unset shellHook
-            unset stdenv
-            unset strictDeps
-            unset system
-          '';
+          baseVarsToUnset = [
+            "CONFIG_SHELL"
+            "HOST_PATH"
+            "MACOSX_DEPLOYMENT_TARGET"
+            "NIX_BUILD_CORES"
+            "NIX_BUILD_TOP"
+            "NIX_CFLAGS_COMPILE"
+            "NIX_DONT_SET_RPATH"
+            "NIX_DONT_SET_RPATH_FOR_BUILD"
+            "NIX_DONT_SET_RPATH_FOR_TARGET"
+            "NIX_NO_SELF_RPATH"
+            "NIX_STORE"
+            "SOURCE_DATE_EPOCH"
+            "TEMP"
+            "TEMPDIR"
+            "TMP"
+            "__darwinAllowLocalNetworking"
+            "__impureHostDeps"
+            "__propagatedImpureHostDeps"
+            "__propagatedSandboxProfile"
+            "__sandboxProfile"
+            "__structuredAttrs"
+            "buildInputs"
+            "buildPhase"
+            "builder"
+            "cmakeFlags"
+            "configureFlags"
+            "depsBuildBuild"
+            "depsBuildBuildPropagated"
+            "depsBuildTarget"
+            "depsBuildTargetPropagated"
+            "depsHostHost"
+            "depsHostHostPropagated"
+            "depsTargetTarget"
+            "depsTargetTargetPropagated"
+            "doCheck"
+            "doInstallCheck"
+            "dontAddDisableDepTrack"
+            "mesonFlags"
+            "name"
+            "nativeBuildInputs"
+            "out"
+            "outputs"
+            "patches"
+            "phases"
+            "preferLocalBuild"
+            "propagatedBuildInputs"
+            "propagatedNativeBuildInputs"
+            "shell"
+            "shellHook"
+            "stdenv"
+            "strictDeps"
+            "system"
+          ];
         in
         {
           mkMinimalShell = args:
             let
-              newShellHook = ''
-                ${unsetVars}
+
+              # Get all top-level attribute names in args.
+              topLevelAttrNames = final.lib.attrNames args;
+
+              # If `args.env` exists and is an attribute set, get its attribute names.
+              envAttrNames = if final.lib.isAttrs (args.env or null) 
+                then final.lib.attrNames args.env 
+                else [];
+
+              # Filter out variables that are in top-level args or args.env.
+              filteredVarsToUnset = final.lib.filter (var:
+                !(final.lib.elem var topLevelAttrNames || final.lib.elem var envAttrNames)
+              ) baseVarsToUnset;
+
+              # Construct the new shell hook by unsetting filtered variables and adding any provided shellHook.
+              controlledShellHook = ''
+                ${final.lib.concatStringsSep " " (final.lib.map (var: "unset ${var}") filteredVarsToUnset)}
                 ${args.shellHook or ""}
               '';
+
+              clearedAttributes = {
+              };
             in
-            final.mkShell.override { stdenv = stdenvMinimal; } (args // { shellHook = newShellHook; });
+            final.mkShell.override { stdenv = stdenvMinimal; } (clearedAttributes // args // { shellHook = controlledShellHook; });
         };
     };
 }
