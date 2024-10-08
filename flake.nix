@@ -28,6 +28,7 @@
             "NIX_DONT_SET_RPATH_FOR_TARGET"
             "NIX_NO_SELF_RPATH"
             "NIX_STORE"
+            "NIX_LDFLAGS"
             "SOURCE_DATE_EPOCH"
             "TEMP"
             "TEMPDIR"

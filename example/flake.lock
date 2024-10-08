@@ -2,14 +2,17 @@
   "nodes": {
     "mk-minimal-shell": {
       "locked": {
-        "lastModified": 0,
-        "narHash": "sha256-UV2AjS8/CFaufM4P3ijwUyf/SA46SUU63ZHU4wE4qu8=",
-        "path": "../",
-        "type": "path"
+        "lastModified": 1728357862,
+        "narHash": "sha256-ZmxobYEUwpwVnXnwey1xB495Pt6PV3IkudyGkce/xzA=",
+        "owner": "n-hass",
+        "repo": "mkminimalshell",
+        "rev": "5c2c52f22054904d77438cd4b50930a8bcdc681e",
+        "type": "github"
       },
       "original": {
-        "path": "../",
-        "type": "path"
+        "owner": "n-hass",
+        "repo": "mkminimalshell",
+        "type": "github"
       }
     },
     "nixpkgs": {
