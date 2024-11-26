@@ -85,13 +85,13 @@
                 else [];
 
               # Filter out variables that are in top-level args or args.env.
-              filteredVarsToUnset = final.lib.filter (var:
+              filteredVarsToUnset = builtins.filter (var:
                 !(final.lib.elem var topLevelAttrNames || final.lib.elem var envAttrNames)
               ) baseVarsToUnset;
 
               # Construct the new shell hook by unsetting filtered variables and adding any provided shellHook.
               controlledShellHook = ''
-                ${final.lib.concatStringsSep " " (final.lib.map (var: "unset ${var}") filteredVarsToUnset)}
+                ${final.lib.concatStringsSep " " (builtins.map (var: "unset ${var}") filteredVarsToUnset)}
                 ${args.shellHook or ""}
               '';
 
