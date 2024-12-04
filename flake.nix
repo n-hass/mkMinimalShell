@@ -1,19 +1,21 @@
 {
   description = "An overlay providing mkMinimalShell";
 
-  outputs = { self }:
+  outputs =
+    { self }:
     {
-      overlay = final: prev:
+      overlay =
+        final: prev:
         let
           stdenvMinimal = final.stdenvNoCC.override {
             cc = null;
             preHook = "";
             allowedRequisites = null;
-            initialPath = final.lib.filter
-              (a: final.lib.hasPrefix "coreutils" a.name)
-              final.stdenvNoCC.initialPath;
+            initialPath = final.lib.filter (
+              a: final.lib.hasPrefix "coreutils" a.name
+            ) final.stdenvNoCC.initialPath;
             shell = "${final.bash}/bin/bash";
-            extraNativeBuildInputs = [];
+            extraNativeBuildInputs = [ ];
           };
 
           baseVarsToUnset = [
@@ -71,22 +73,26 @@
             "strictDeps"
             "system"
           ];
+
+          ignoredTopLevelAttrs = [
+            "shellHook"
+          ];
         in
         {
-          mkMinimalShell = args:
+          mkMinimalShell =
+            args:
             let
-
               # Get all top-level attribute names in args.
-              topLevelAttrNames = final.lib.attrNames args;
+              topLevelAttrNames = builtins.filter (var: !(final.lib.elem var ignoredTopLevelAttrs)) (
+                final.lib.attrNames args
+              );
 
               # If `args.env` exists and is an attribute set, get its attribute names.
-              envAttrNames = if final.lib.isAttrs (args.env or null) 
-                then final.lib.attrNames args.env 
-                else [];
+              envAttrNames = if final.lib.isAttrs (args.env or null) then final.lib.attrNames args.env else [ ];
 
               # Filter out variables that are in top-level args or args.env.
-              filteredVarsToUnset = builtins.filter (var:
-                !(final.lib.elem var topLevelAttrNames || final.lib.elem var envAttrNames)
+              filteredVarsToUnset = builtins.filter (
+                var: !(final.lib.elem var topLevelAttrNames || final.lib.elem var envAttrNames)
               ) baseVarsToUnset;
 
               # Construct the new shell hook by unsetting filtered variables and adding any provided shellHook.
@@ -95,10 +101,13 @@
                 ${args.shellHook or ""}
               '';
 
-              clearedAttributes = {
-              };
+              clearedAttributes =
+                {
+                };
             in
-            final.mkShell.override { stdenv = stdenvMinimal; } (clearedAttributes // args // { shellHook = controlledShellHook; });
+            final.mkShell.override { stdenv = stdenvMinimal; } (
+              clearedAttributes // args // { shellHook = controlledShellHook; }
+            );
         };
     };
 }
