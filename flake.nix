@@ -20,8 +20,10 @@
 
           baseVarsToUnset = [
             "CONFIG_SHELL"
+            "DEVELOPER_DIR"
             "HOST_PATH"
             "MACOSX_DEPLOYMENT_TARGET"
+            "NIX_APPLE_SDK_VERSION"
             "NIX_BUILD_CORES"
             "NIX_BUILD_TOP"
             "NIX_CFLAGS_COMPILE"
@@ -31,6 +33,7 @@
             "NIX_NO_SELF_RPATH"
             "NIX_STORE"
             "NIX_LDFLAGS"
+            "SDKROOT"
             "SOURCE_DATE_EPOCH"
             "TEMP"
             "TEMPDIR"
@@ -57,6 +60,8 @@
             "doCheck"
             "doInstallCheck"
             "dontAddDisableDepTrack"
+            "extraUnsetEnv"
+            "keepEnv"
             "mesonFlags"
             "name"
             "nativeBuildInputs"
@@ -73,41 +78,32 @@
             "strictDeps"
             "system"
           ];
-
-          ignoredTopLevelAttrs = [
-            "shellHook"
-          ];
         in
         {
           mkMinimalShell =
+            with builtins;
             args:
             let
-              # Get all top-level attribute names in args.
-              topLevelAttrNames = builtins.filter (var: !(final.lib.elem var ignoredTopLevelAttrs)) (
-                final.lib.attrNames args
+              userUnsetVars = args.extraUnsetEnv or [ ];
+              userKeepVars = args.keepEnv or [ ];
+              topLevelAttrNames = attrNames args;
+              userEnv = args.env or { };
+              envAttrNames = attrNames userEnv;
+
+              filteredBaseVarsToUnset = filter (var: !(elem var envAttrNames) && !(elem var userKeepVars)) (
+                baseVarsToUnset ++ topLevelAttrNames
               );
 
-              # If `args.env` exists and is an attribute set, get its attribute names.
-              envAttrNames = if final.lib.isAttrs (args.env or null) then final.lib.attrNames args.env else [ ];
-
-              # Filter out variables that are in top-level args or args.env.
-              filteredVarsToUnset = builtins.filter (
-                var: !(final.lib.elem var topLevelAttrNames || final.lib.elem var envAttrNames)
-              ) baseVarsToUnset;
-
-              # Construct the new shell hook by unsetting filtered variables and adding any provided shellHook.
               controlledShellHook = ''
-                ${final.lib.concatStringsSep " " (builtins.map (var: "unset ${var}") filteredVarsToUnset)}
+                ${concatStringsSep "\n" (map (var: "unset ${var}") filteredBaseVarsToUnset)}
+                ${concatStringsSep "\n" (map (var: "unset ${var}") userUnsetVars)}
+                ${concatStringsSep "\n" (
+                  attrValues (mapAttrs (name: value: "${name}='${toString value}'") userEnv)
+                )}
                 ${args.shellHook or ""}
               '';
-
-              clearedAttributes =
-                {
-                };
             in
-            final.mkShell.override { stdenv = stdenvMinimal; } (
-              clearedAttributes // args // { shellHook = controlledShellHook; }
-            );
+            final.mkShell.override { stdenv = stdenvMinimal; } (args // { shellHook = controlledShellHook; });
         };
     };
 }
